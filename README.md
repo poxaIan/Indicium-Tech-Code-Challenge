@@ -1,84 +1,206 @@
-# Indicium Tech Code Challenge
+# Relatório Desafio de Engenharia de Dados
+## Introdução
+Este documento detalha a execução e implementação da solução para o
+Indicium Tech Code Challenge (https://github.com/techindicium/code-challenge).
 
-Code challenge for Software Developer with focus in data projects.
+Autor: Ian Miranda Gomes de Souza - ian.mgsouza@gmail.com
+
+GitHub do Desafio - https://github.com/poxaIan/Indicium-Tech-Code-Challenge
+
+### Tecnologias Usadas:
+- Scheduler: **Airflow**
+
+- Data Loader: **Meltano (Baseado em Python)**
+
+- Database: **PostgreSQL**
+
+- Python 3.9 ou inferior
+
+## Configuração do Ambiente
+
+### Aviso Importante
+Dependendo da versão do Docker Compose instalada em seu sistema, 
+a chamada ao comando pode variar. Certifique-se de verificar se a 
+sua versão requer o uso de um hífen ou não.
+
+- Versões mais antigas: O comando é docker-compose (com hífen).
+- Versões mais recentes: O comando é docker compose (sem hífen).
+
+Por favor, ajuste seus comandos conforme a versão do Docker Compose que você está utilizando para evitar erros.
+
+### Execute os seguinte comandos para preparar o ambiente:
+**Instalação do Meltano:** Ferramenta que facilita o gerenciamento de pipelines de dados.
+```
+pip install meltano
+```
+
+**Construção do Projeto:** Executado para **configurar o ambiente** e instalar dependências adicionais necessárias para o projeto.
+```
+bash ./build.sh
+```
+
+**Inicialização da Aplicação:** Utilizado para inicializar o projeto, configurando os plugins e verificando as dependências.
+```
+bash ./init.sh
+```
+
+**Pipeline executa qualquer dia anterior.** Modifique a data para escolher qualquer dia de interesse.
+```
+bash ./init.sh 2024-10-06
+```
+
+![image](https://github.com/poxaIan/Desafio_Engenharia_Dados/blob/main/Docs/Fluxograma.png)
+
+Fluxograma de como funciona o projeto no geral - Fonte: Autor do Projeto
 
 
-## Context
+## Executando cada trabalho individualmente
 
-At Indicium we have many projects where we develop the whole data pipeline for our client, from extracting data from many data sources to loading this data at its final destination, with this final destination varying from a data warehouse for a Business Intelligency tool to an api for integrating with third party systems.
+Será usado a data definida no arquivo .env, não é possível passar um argumento de data aqui
 
-As a software developer with focus in data projects your mission is to plan, develop, deploy, and maintain a data pipeline.
+Step 1:
+```
+meltano run details-to-csv
+meltano run postgres-to-csv
+```
+
+Step 2:
+```
+meltano run disk-to-postgres
+```
 
 
-## The Challenge
+# Resultados das Consultas
 
-We are going to provide 2 data sources, a PostgreSQL database and a CSV file.
+## Step 1
 
-The CSV file represents details of orders from an ecommerce system.
-
-The database provided is a sample database provided by microsoft for education purposes called northwind, the only difference is that the **order_detail** table does not exists in this database you are beeing provided with. This order_details table is represented by the CSV file we provide.
-
-Schema of the original Northwind Database: 
-
-![image](https://user-images.githubusercontent.com/49417424/105997621-9666b980-608a-11eb-86fd-db6b44ece02a.png)
-
-Your challenge is to build a pipeline that extracts the data everyday from both sources and write the data first to local disk, and second to a PostgreSQL database. For this challenge, the CSV file and the database will be static, but in any real world project, both data sources would be changing constantly.
-
-Its important that all writing steps (writing data from inputs to local filesystem and writing data from local filesystem to PostgreSQL database) are isolated from each other, you shoud be able to run any step without executing the others.
-
-For the first step, where you write data to local disk, you should write one file for each table. This pipeline will run everyday, so there should be a separation in the file paths you will create for each source(CSV or Postgres), table and execution day combination, e.g.:
+Verifique os resultados salvos localmente em: 
 
 ```
-/data/postgres/{table}/2024-01-01/file.format
-/data/postgres/{table}/2024-01-02/file.format
-/data/csv/2024-01-02/file.format
+/data/postgres/{table}/{Data_Escolhida}/{table}.csv
+/data/csv/{Data_Escolhida}/order_details.csv
+```
+Cada tabela existente foi criada uma saída salva local, 
+onde foram **extraidas todas as tabelas do banco de dados da origem.**
+
+![image](https://github.com/poxaIan/Desafio_Engenharia_Dados/blob/main/Docs/resultados.png)
+
+Print do Autor do Projeto dos arquivos de saídas salvas localmente.
+
+Verifique os Jobs:
+
+```
+meltano run details-to-csv 
+meltano run postgres-to-csv
 ```
 
-You are free to chose the naming and the format of the file you are going to save.
+O formato .csv foi escolhido pois:
 
-At step 2, you should load the data from the local filesystem, which you have created, to the final database.
+- Simplicidade: Formato de texto fácil de criar, ler e editar.
+- Compatibilidade: Suportado por quase todos os softwares de planilhas e bancos de dados.
+- Eficiência: Leve, compacto e rápido para transferir e carregar.
+- Flexibilidade: Fácil de integrar e personalizar com scripts e ferramentas.
+- Popularidade: Amplamente usado em data science e análise de dados.
 
-The final goal is to be able to run a query that shows the orders and its details. The Orders are placed in a table called **orders** at the postgres Northwind database. The details are placed at the csv file provided, and each line has an **order_id** field pointing the **orders** table.
-
-## Solution Diagram
-
-As Indicium uses some standard tools, the challenge was designed to be done using some of these tools.
-
-The following tools should be used to solve this challenge.
-
-Scheduler:
-- [Airflow](https://airflow.apache.org/docs/apache-airflow/stable/installation/index.html)
-
-Data Loader:
-- [Embulk](https://www.embulk.org) (Java Based)
-**OR**
-- [Meltano](https://docs.meltano.com/?_gl=1*1nu14zf*_gcl_au*MTg2OTE2NDQ4Mi4xNzA2MDM5OTAz) (Python Based)
-
-Database:
-- [PostgreSQL](https://www.postgresql.org/docs/15/index.html)
-
-The solution should be based on the diagrams below:
-![image](docs/diagrama_embulk_meltano.jpg)
+## Step 2
 
 
-### Requirements
+Dados são carregados dos arquivos locais da etapa 1
+para o banco de dados final **dbdata_target**. A execução do job foi:
 
-- You **must** use the tools described above to complete the challenge.
-- All tasks should be idempotent, you should be able to run the pipeline everyday and, in this case where the data is static, the output shold be the same.
-- Step 2 depends on both tasks of step 1, so you should not be able to run step 2 for a day if the tasks from step 1 did not succeed.
-- You should extract all the tables from the source database, it does not matter that you will not use most of them for the final step.
-- You should be able to tell where the pipeline failed clearly, so you know from which step you should rerun the pipeline.
-- You have to provide clear instructions on how to run the whole pipeline. The easier the better.
-- You must provide evidence that the process has been completed successfully, i.e. you must provide a csv or json with the result of the query described above.
-- You should assume that it will run for different days, everyday.
-- Your pipeline should be prepared to run for past days, meaning you should be able to pass an argument to the pipeline with a day from the past, and it should reprocess the data for that day. Since the data for this challenge is static, the only difference for each day of execution will be the output paths.
+```
+meltano run disk-to-postgres
+```
 
-### Things that Matters
+O banco de dados finaliza com todas as tabelas necessárias para a consulta que 
+detalha os pedidos. Esta consulta está em `queries/final_goal.sql`, com os resultados 
+em `queries/{data_escolhida}/final_goal.csv`. Consulte também outras consultas de exemplo no 
+mesmo diretório.
 
-- Clean and organized code.
-- Good decisions at which step (which database, which file format..) and good arguments to back those decisions up.
-- The aim of the challenge is not only to assess technical knowledge in the area, but also the ability to search for information and use it to solve problems with tools that are not necessarily known to the candidate.
-- Point and click tools are not allowed.
+![image](https://github.com/poxaIan/Desafio_Engenharia_Dados/blob/main/Docs/step2.png)
+
+Arquivo final_goal.csv - Fonte: Autor do Projeto
+
+## Considerações Importantes
 
 
-Thank you for participating!
+- **Delimitadores CSV:**
+Alguns arquivos têm vírgulas no conteúdo, foram alterados para ponto e vírgula.
+
+
+- **Configuração do tap-postgres e target-csv-tables:**
+Utilizados na etapa 1 para carregar o banco de dados Northwind no disco. 
+O extrator recupera apenas o esquema público (`'select: - public-*.*`), 
+ignorando information_schema. Tabelas vazias, 
+como customer_customer_demo e customer_demographics, não são criadas no disco.
+
+
+- **Manipulação do Tipo de Dados Real:**
+Os campos orders.freight e products.unit_price no banco Northwind, que usam o tipo Real, 
+foram mapeados para float usando o meltano-map-transformer. O tipo bpchar é tratado 
+como string pelo tap.
+
+### Verificação se ocorrer falha no pipeline
+Navegue até o diretório `queries/arquivos` para analisar onde erros podem ocorre na conversão dos arquivos.
+
+![image](https://github.com/poxaIan/Desafio_Engenharia_Dados/blob/main/Docs/queries.png)
+
+Imagem mostrando onde encontrar os arquivos sql convertidos em csv para análise.
+
+A seguir prints dos arquivos salvos localmente e com eles no Postgres:
+
+![image](https://github.com/poxaIan/Desafio_Engenharia_Dados/blob/main/Docs/orders_csv.png) 
+Arquivo orders_csv salvo localmente.
+
+![image](https://github.com/poxaIan/Desafio_Engenharia_Dados/blob/main/Docs/orders_south.png)
+Tabela orders do Postgres do **segundo banco de dados criado.**
+
+
+
+
+
+
+## Airflow
+
+Verificação se o airflow está rodando em segundo plano
+```
+meltano invoke airflow scheduler
+```
+
+Verificação se os agendamentos estão configurados corretamente:
+
+```
+meltano invoke airflow dags list
+```
+
+Verificação dos próximos 10 tempos de execução para cada dag:
+
+```
+meltano invoke airflow dags next-execution -n 10 meltano_load-details-csv_details-to-csv
+meltano invoke airflow dags next-execution -n 10 meltano_load-postgres-csv_postgres-to-csv 
+meltano invoke airflow dags next-execution -n 10 meltano_load-disk-postgres_disk-to-postgres
+```
+
+## Desafios Enfrentados
+- **Configuração Inicial:** A configuração inicial do ambiente, incluindo a 
+instalação do Meltano e a configuração do Docker, apresentou alguns desafios, 
+especialmente em relação à compatibilidade de versões.
+
+
+- **Compatibilidade do Docker Compose:** Foi necessário ajustar os arquivos de script 
+para garantir a compatibilidade com a versão do Docker Compose utilizada.
+
+
+- **Conflitos de Porta:** Houve a necessidade de gerenciar conflitos de porta com outros 
+serviços em execução no sistema.
+
+
+- **Padrões de Nome de Arquivo:** O script organiza_details.py apresentou dificuldades ao lidar com padrões de nome de arquivo, exigindo ajustes para garantir que os arquivos fossem processados corretamente.
+
+## Conclusão
+Apesar dos desafios enfrentados, a solução foi **implementada com sucesso.** 
+Os dados foram extraídos de arquivos locais, transformados conforme necessário 
+e carregados no banco de dados PostgreSQL conforme os requisitos do desafio. 
+Este projeto proporcionou uma experiência valiosa no uso de ferramentas de ETL 
+e orquestração de dados, como Meltano e Docker, e demonstrou a eficácia dessas 
+ferramentas na automação de processos de engenharia de dados.
